@@ -192,3 +192,6 @@ For issues and questions:
 ---
 
 **Note**: This setup is configured for the Shannon testnet. For mainnet deployment, additional security measures and configuration changes are required.
+
+---
+*Last updated: September 3, 2025*
