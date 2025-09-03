@@ -1,0 +1,36 @@
+# Data directories
+poktrolld-data/
+prometheus/
+shannon_migration/
+stake_configs/
+
+# Environment files
+.env
+
+# Embedded git repositories
+path/
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

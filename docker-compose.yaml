@@ -1,0 +1,59 @@
+services:
+  shannon-testnet-node:
+    image: weaversnodes/shannon:v0.1.28
+    container_name: shannon-testnet-node
+    restart: unless-stopped
+    entrypoint: ["bash", "/start-fullnode.sh"]
+    env_file: .env
+    environment:
+      - GENESIS_URL=https://shannon-testnet-grove-rpc.beta.poktroll.com/genesis
+    ports:
+      - "26656:26656"            # P2P
+      - "26657:26657"            # RPC
+      - "9090:9090"              # gRPC
+      # - "1317:1317"            # (opcional) REST API si la habilitas
+    volumes:
+      - ./pocket-testnet:/root/.pocket            # ✅ ÚNICO volumen home
+      - ./scripts/start-fullnode.sh:/start-fullnode.sh:ro
+      - ./stake_configs:/root/stake_configs
+      - /home/pocket/pocketfs/shannon/stake_configs/pocket-config-generator:/root/pocket-config-generator
+      - ./shannon_migration:/shannon_migration
+    networks:
+      - shannon
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "curl -fsS http://127.0.0.1:26657/status >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  shannon-testnet-gateway:
+    image: ghcr.io/buildwithgrove/path:main
+    container_name: shannon-testnet-gateway
+    # depends_on:
+    #   shannon-testnet-node:
+    #     condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "3069:3069"
+    volumes:
+      - ./gateway/config/.config.yaml:/app/config/.config.yaml:ro
+    command: ./path
+    networks:
+      - shannon
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+networks:
+  shannon:
+    name: shannon
+    driver: bridge
+

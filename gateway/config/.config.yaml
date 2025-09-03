@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+
+shannon_config:
+  full_node_config:
+    # Endpoints públicos del Beta TestNet (Grove)
+    rpc_url: "https://shannon-testnet-grove-rpc.beta.poktroll.com"
+    grpc_config:
+      host_port: "shannon-testnet-grove-grpc.beta.poktroll.com:443"
+      insecure: false
+      backoff_base_delay: "1s"
+      backoff_max_delay: "120s"
+      min_connect_timeout: "20s"
+      keep_alive_time: "20s"
+      keep_alive_timeout: "20s"
+    lazy_mode: false
+
+  gateway_config:
+    # Centralized = el gateway firma y usa las apps que tú controlas (ideal para tests)
+    gateway_mode: "centralized"
+    gateway_address: "pokt1gzpeptmukzxk3ma44q300q9fa5nzjy80wgglxc"
+    gateway_private_key_hex: "203d1163d27f239d081dfc71b113b91cd7ed57358c32791bdd7777d05638a9ed"
+    owned_apps_private_keys_hex:
+      - "0000000000000000000000000000000000000000000000000000000000000001"
+      # agrega más claves si tienes varias apps
+
+  # Fallback opcional por servicio (por si el protocolo queda sin endpoints válidos)
+  # service_fallback:
+  #   - service_id: eth
+  #     send_all_traffic: false
+  #     fallback_urls:
+  #       - "https://eth.rpc.grove.city/v1/tu-token"
+  #       - "https://otro.endpoint/..."
+  
+router_config:
+  # Puerto HTTP en el que PATH escucha
+  port: 3069
+
+logger_config:
+  level: "info"
