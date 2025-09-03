@@ -11,9 +11,9 @@ services:
       - "26656:26656"            # P2P
       - "26657:26657"            # RPC
       - "9090:9090"              # gRPC
-      # - "1317:1317"            # (opcional) REST API si la habilitas
+      # - "1317:1317"            # (optional) REST API if enabled
     volumes:
-      - ./pocket-testnet:/root/.pocket            # ✅ ÚNICO volumen home
+      - ./pocket-testnet:/root/.pocket            # ✅ ONLY home volume
       - ./scripts/start-fullnode.sh:/start-fullnode.sh:ro
       - ./stake_configs:/root/stake_configs
       - /home/pocket/pocketfs/shannon/stake_configs/pocket-config-generator:/root/pocket-config-generator
@@ -35,9 +35,9 @@ services:
   shannon-testnet-gateway:
     image: ghcr.io/buildwithgrove/path:main
     container_name: shannon-testnet-gateway
-    # depends_on:
-    #   shannon-testnet-node:
-    #     condition: service_healthy
+    depends_on:
+      shannon-testnet-node:
+        condition: service_healthy
     restart: unless-stopped
     ports:
       - "3069:3069"
@@ -46,6 +46,12 @@ services:
     command: ./path
     networks:
       - shannon
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3069/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
     logging:
       driver: json-file
       options:

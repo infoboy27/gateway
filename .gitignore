@@ -6,6 +6,7 @@ stake_configs/
 
 # Environment files
 .env
+gateway/config/.values.yaml
 
 # Embedded git repositories
 path/
