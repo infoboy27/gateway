@@ -1,0 +1,18 @@
+# Authentication configuration for Path Gateway
+# This file contains sensitive information and should not be committed to version control
+
+# Gateway private key (hex format)
+gateway_private_key: "203d1163d27f239d081dfc71b113b91cd7ed57358c32791bdd7777d05638a9ed"
+
+# App private keys (hex format)
+app_private_keys:
+  - "0000000000000000000000000000000000000000000000000000000000000001"
+
+# Optional: Additional configuration values
+# These can be overridden by environment variables
+environment:
+  NODE_ENV: "development"
+  LOG_LEVEL: "info"
+  CORS_ENABLED: "true"
+
+

@@ -1,0 +1,99 @@
+// To generate the Go code from this proto file, run: `make proto_generate`
+// See `proto.mk` for more details.
+
+syntax = "proto3";
+package path;
+
+option go_package = "github.com/buildwithgrove/path/observation";
+
+import "google/protobuf/timestamp.proto";
+import "path/auth.proto"; // import RequestAuth message.
+
+// RequestType captures the origin of the request.
+// As of PR #72, it is one of:
+//  1. Organic: a real user sent a service request to a PATH instance
+//  2. Synthetic: internal infrastructure generated the service request for simulation and data purposes.
+enum RequestType {
+  REQUEST_TYPE_UNSPECIFIED = 0;
+
+  // Organic: Service request sent by a user.
+  REQUEST_TYPE_ORGANIC = 1;
+
+  // Synthetic: Service request sent by the endpoint hydrator: see gateway/hydrator.go.
+  REQUEST_TYPE_SYNTHETIC = 2;
+}
+
+enum GatewayRequestErrorKind {
+  GATEWAY_REQUEST_ERROR_KIND_UNSPECIFIED = 0;
+
+  // Service ID not specified.
+  GATEWAY_REQUEST_ERROR_KIND_MISSING_SERVICE_ID = 1;
+
+  // QoS rejected the request.
+  // e.g. malformed payload could not be unmarshaled into JSONRPC
+  GATEWAY_REQUEST_ERROR_KIND_REJECTED_BY_QOS = 2;
+
+  // WebSocket request was rejected by QoS instance.
+  // e.g. WebSocket subscription request validation failed.
+  GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_REJECTED_BY_QOS = 3;
+
+  // WebSocket connection establishment failed.
+  // e.g. Failed to upgrade HTTP connection to WebSocket or connect to endpoint.
+  GATEWAY_REQUEST_ERROR_KIND_WEBSOCKET_CONNECTION_FAILED = 4;
+}
+
+// GatewayObservations is the set of observations on a service request, made from the perspective of a gateway.
+// Examples include the geographic region of the request, the request type, etc.
+message GatewayObservations {
+  // request_auth stores any fields related to the identification/authentication of the request.
+  RequestAuth request_auth = 1;
+
+  // Specifies the request origin.
+  // For example, wWhether the request was sent by a user or synthetically generated (e.g. by the endpoint hydrator).
+  RequestType request_type = 2;
+
+  // service_id is the identifier specified via custom HTTP header.
+  // As of PR #72, this can only be specified through a custom header on the HTTP request, extracted in `request/parser.go`.
+  string service_id = 3;
+
+  // received_time is when the request was initially received
+  //   - For HTTP requests: when the HTTP request was received
+  //   - For WebSocket requests: when the WebSocket connection was established
+  google.protobuf.Timestamp received_time = 4;
+
+  // completed_time is when request processing finished and response was returned
+  //   - For HTTP requests: when the HTTP response was sent
+  //   - For WebSocket requests: when the WebSocket connection was terminated
+  google.protobuf.Timestamp completed_time = 5;
+
+  // response_size is the size in bytes of the response payload
+  uint64 response_size = 6;
+
+  // gateway-level request error, if any.
+  // e.g. no service ID specified.
+  optional GatewayRequestError request_error = 7;
+
+  // parallel_request_observations tracks the outcome of parallel requests within a batch.
+  optional GatewayParallelRequestObservations gateway_parallel_request_observations = 8;
+}
+
+// Tracks any errors encountered at the gateway level.
+// e.g.: No Service ID specified by the request's HTTP headers.
+message GatewayRequestError {
+  // Categorizes the error
+  GatewayRequestErrorKind error_kind = 1;
+  // Detailed reason
+  string details = 2;
+}
+
+// Tracks the outcome of parallel requests within a batch.
+message GatewayParallelRequestObservations {
+  // The number of requests made
+  int32 num_requests = 1;
+  // The number of successful requests
+  int32 num_successful = 2;
+  // The number of failed requests
+  int32 num_failed = 3;
+  // The number of canceled requests
+  int32 num_canceled = 4;
+}

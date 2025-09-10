@@ -1,0 +1,325 @@
+syntax = "proto3";
+package path.protocol;
+
+option go_package = "github.com/buildwithgrove/path/observation/protocol";
+
+import "google/protobuf/timestamp.proto";
+
+// ShannonRequestErrorType enumerates possible relay request errors.
+enum ShannonRequestErrorType {
+  SHANNON_REQUEST_ERROR_UNSPECIFIED = 0;
+  SHANNON_REQUEST_ERROR_INTERNAL = 1; // Internal error.
+  // No endpoints available for the service
+  // Due to one or more of the following:
+  // - Any of the gateway mode errors above
+  // - Error fetching a session for one or more apps.
+  // - One or more available endpoints are sanctioned.
+  SHANNON_REQUEST_ERROR_INTERNAL_NO_ENDPOINTS_AVAILABLE = 2;
+  // Centralized gateway mode: Error fetching the app.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_FETCH_ERR = 3;
+  // Centralized gateway mode app does not delegate to the gateway.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_APP_DELEGATION = 4;
+  // Centralized gateway mode: no active sessions found for service.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_SESSIONS = 5;
+  // Centralized gateway mode: no apps found for service.
+  SHANNON_REQUEST_ERROR_INTERNAL_CENTRALIZED_MODE_NO_APPS_FOR_SERVICE = 6;
+  // Delegated gateway mode: could not extract app address from HTTP request
+  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_GET_APP_HTTP = 7;
+  // Delegated gateway mode: error fetching the app
+  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_FETCH_APP = 8;
+  // Delegated gateway mode: app does not delegate to the gateway
+  SHANNON_REQUEST_ERROR_INTERNAL_DELEGATED_APP_DOES_NOT_DELEGATE = 9;
+  // Error initializing a signer for the selected gateway mode.
+  SHANNON_REQUEST_ERROR_INTERNAL_SIGNER_SETUP_ERROR = 10;
+}
+
+// ShannonRequestError stores details of any errors encountered processing the request.
+message ShannonRequestError {
+	// Type of request error, e.g. internal
+	ShannonRequestErrorType error_type = 1;
+	// Details of the request error.
+	string error_details = 2;
+}
+
+// ShannonEndpointErrorType enumerates possible relay errors when interacting with Shannon endpoints.
+enum ShannonEndpointErrorType {
+  SHANNON_ENDPOINT_ERROR_UNSPECIFIED = 0;
+  // endpoint internal error: not recognized.
+  // DEPRECATED: Use more specific error types below (HTTP_UNKNOWN, RAW_PAYLOAD_UNKNOWN, UNKNOWN)
+  SHANNON_ENDPOINT_ERROR_INTERNAL = 1 [deprecated = true];
+  // endpoint config error: e.g. DNS lookup error, TLS certificate error.
+  SHANNON_ENDPOINT_ERROR_CONFIG = 2;
+  // endpoint timeout on responding to relay request.
+  SHANNON_ENDPOINT_ERROR_TIMEOUT = 3;
+  // Endpoint payload failed to unmarshal into a RelayResponse struct
+  SHANNON_ENDPOINT_ERROR_PAYLOAD_UNMARSHAL_ERR = 4;
+  // Endpoint response failed basic validation
+  SHANNON_ENDPOINT_ERROR_RESPONSE_VALIDATION_ERR = 5;
+  // Could not fetch the public key for supplier address used for the relay.
+  SHANNON_ENDPOINT_ERROR_RESPONSE_GET_PUBKEY_ERR = 6;
+  // Received nil public key on supplier lookup using its address
+  SHANNON_ENDPOINT_ERROR_NIL_SUPPLIER_PUBKEY = 7;
+  // RelayResponse's signature failed validation.
+  SHANNON_ENDPOINT_ERROR_RESPONSE_SIGNATURE_VALIDATION_ERR = 8;
+
+  // HTTP relay errors - fine-grained network and transport failures
+  // Connection establishment failures
+  SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_REFUSED = 10;
+  SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_RESET = 11;
+  SHANNON_ENDPOINT_ERROR_HTTP_CONNECTION_TIMEOUT = 12;
+  SHANNON_ENDPOINT_ERROR_HTTP_NO_ROUTE_TO_HOST = 13;
+  SHANNON_ENDPOINT_ERROR_HTTP_NETWORK_UNREACHABLE = 14;
+
+  // Transport layer errors
+  SHANNON_ENDPOINT_ERROR_HTTP_BROKEN_PIPE = 15;
+  SHANNON_ENDPOINT_ERROR_HTTP_IO_TIMEOUT = 16;
+  SHANNON_ENDPOINT_ERROR_HTTP_TRANSPORT_ERROR = 17;
+
+  // HTTP protocol errors
+  SHANNON_ENDPOINT_ERROR_HTTP_BAD_RESPONSE = 18;
+  SHANNON_ENDPOINT_ERROR_HTTP_INVALID_STATUS = 19;
+
+  // Raw payload analysis error types (when unmarshal/validation fails)
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_CONNECTION_REFUSED = 20;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVICE_NOT_CONFIGURED = 21;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNEXPECTED_EOF = 22;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_WIRE_TYPE = 23;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_PROTOCOL_RELAY_REQUEST = 24;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SUPPLIERS_NOT_REACHABLE = 25;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_BACKEND_SERVICE = 26;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TCP_CONNECTION = 27;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_RESPONSE_SIZE_EXCEEDED = 28;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_SERVER_CLOSED_CONNECTION = 29;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_HTTP_TRANSPORT = 30;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_DNS_RESOLUTION = 31;
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_TLS_HANDSHAKE = 32;
+
+  // RelayRequest was canceled by PATH intentionally.
+  SHANNON_ENDPOINT_REQUEST_CANCELED_BY_PATH = 33;
+
+  // New error types for better classification (added without renumbering existing ones)
+  // Error was recognized but specific classification failed.
+  // Only general category: HTTP, Raw Payload, General, is known.
+
+  // ** SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN **
+  // PATH -> HTTP Request -> Endpoint
+  // HTTP Response is NOT received
+  // We cannot move forward with PATH business logic
+  // There is nothing to go to.
+  SHANNON_ENDPOINT_ERROR_HTTP_UNKNOWN = 34;
+
+  SHANNON_ENDPOINT_ERROR_RAW_PAYLOAD_UNKNOWN = 35;
+  SHANNON_ENDPOINT_ERROR_UNKNOWN = 36;
+
+  // The relay request sent to the endpoint via HTTP returned a non 2XX HTTP status code.
+  SHANNON_ENDPOINT_ERROR_HTTP_NON_2XX_STATUS = 37;
+  // The relay request sent to the endpoint via HTTP failed with `context deadline exceeded` error
+  SHANNON_ENDPOINT_ERROR_HTTP_CONTEXT_DEADLINE_EXCEEDED = 38;
+
+  // The relay request sent to the endpoint via WebSocket failed to establish a connection.
+  SHANNON_ENDPOINT_ERROR_WEBSOCKET_CONNECTION_FAILED = 39;
+
+  // The relay request sent to the endpoint via WebSocket failed to sign the request.
+  SHANNON_ENDPOINT_ERROR_WEBSOCKET_REQUEST_SIGNING_FAILED = 40;
+
+  // The relay request sent to the endpoint via WebSocket failed to validate the relay response.
+  SHANNON_ENDPOINT_ERROR_WEBSOCKET_RELAY_RESPONSE_VALIDATION_FAILED = 41;
+}
+
+// ShannonSanctionType specifies the duration type for endpoint sanctions
+enum ShannonSanctionType {
+  SHANNON_SANCTION_UNSPECIFIED = 0;
+  SHANNON_SANCTION_SESSION = 1;  // Valid only for current session
+  SHANNON_SANCTION_PERMANENT = 2; // Sanction persists indefinitely; can only be cleared by Gateway restart (e.g., redeploying the K8s pod or restarting the binary)
+  SHANNON_SANCTION_DO_NOT_SANCTION = 3; // Do not sanction the endpoint based on this error
+  // TODO_IMPROVE: Add a temporary sanction that lasts a few blocks.
+}
+
+// ShannonRelayMinerError captures relay miner error details from the RelayResponse
+message ShannonRelayMinerError {
+  // Codespace from the RelayMinerError
+  string codespace = 1;
+  // Code from the RelayMinerError
+  uint32 code = 2;
+  // Message from the RelayMinerError
+  string message = 3;
+}
+
+// ShannonWebsocketConnectionObservation stores observations from a WebSocket connection lifecycle
+message ShannonWebsocketConnectionObservation {
+  // Supplier of the endpoint handling the WebSocket connection
+  string supplier = 1;
+
+  // URL of the WebSocket endpoint
+  string endpoint_url = 2;
+
+  // Application address associated with the endpoint
+  string endpoint_app_address = 3;
+
+  // Service ID of the session associated with the endpoint.
+  string session_service_id = 4;
+
+  // Session ID of the session associated with the endpoint.
+  string session_id = 5;
+
+  // session start height
+  int64 session_start_height = 6;
+
+  // session end height
+  int64 session_end_height = 7;
+
+  // Error type if WebSocket connection establishment or operation failed
+  optional ShannonEndpointErrorType error_type = 8;
+
+  // Additional error details when available
+  optional string error_details = 9;
+
+  // Recommended sanction type based on the error
+  optional ShannonSanctionType recommended_sanction = 10;
+
+  // RelayMiner error details if the endpoint returned a RelayMinerError during connection lifecycle
+  optional ShannonRelayMinerError relay_miner_error = 11;
+
+  // Tracks whether the endpoint is a fallback endpoint
+  bool is_fallback_endpoint = 12;
+}
+
+// ShannonWebsocketMessageObservation stores observations from individual WebSocket messages
+message ShannonWebsocketMessageObservation {
+  // Supplier of the endpoint handling the WebSocket message
+  string supplier = 1;
+
+  // URL of the WebSocket endpoint
+  string endpoint_url = 2;
+
+  // Application address associated with the endpoint
+  string endpoint_app_address = 3;
+
+  // Service ID of the session associated with the endpoint.
+  string session_service_id = 4;
+
+  // Session ID of the session associated with the endpoint.
+  string session_id = 5;
+
+  // session start height
+  int64 session_start_height = 6;
+
+  // session end height
+  int64 session_end_height = 7;
+
+  // Timestamp marking when the message was sent to the endpoint
+  // For subscription events, this represents when the event was received from endpoint
+  google.protobuf.Timestamp message_timestamp = 8;
+
+  // Size of the message payload in bytes
+  int64 message_payload_size = 9;
+
+  // Error type if message processing failed
+  optional ShannonEndpointErrorType error_type = 10;
+
+  // Additional error details when available
+  optional string error_details = 11;
+
+  // Recommended sanction type based on the error
+  optional ShannonSanctionType recommended_sanction = 12;
+
+  // RelayMiner error details if the endpoint returned a RelayMinerError for this message
+  optional ShannonRelayMinerError relay_miner_error = 13;
+
+  // Tracks whether the endpoint is a fallback endpoint
+  bool is_fallback_endpoint = 14;
+}
+
+// ShannonRequestObservations represents observations collected during the processing
+// of a single Shannon protocol relay request.
+// Next free field: 6
+message ShannonRequestObservations {
+  // Service ID (i.e. chain ID) for which the observation was made
+  string service_id = 1;
+
+  // Error encountered processing the request, if any.
+  optional ShannonRequestError request_error = 2;
+
+  // Observation data - exactly one of the following will be set
+  oneof observation_data {
+    // HTTP endpoint observations (multiple possible due to retries)
+    ShannonHTTPEndpointObservations http_observations = 3;
+
+    // Single WebSocket connection lifecycle observation
+    ShannonWebsocketConnectionObservation websocket_connection_observation = 4;
+
+    // Single WebSocket message observation
+    ShannonWebsocketMessageObservation websocket_message_observation = 5;
+  }
+}
+
+// ShannonHTTPEndpointObservations wraps multiple HTTP endpoint observations
+message ShannonHTTPEndpointObservations {
+  // Multiple observations possible if:
+  // - Original endpoint returns invalid response
+  // - Retry mechanism activates
+  repeated ShannonEndpointObservation endpoint_observations = 1;
+}
+
+// ShannonEndpointObservation stores a single observation from an endpoint
+message ShannonEndpointObservation {
+  // Supplier of the endpoint handling the request
+  string supplier = 1;
+
+  // URL of the endpoint handling the request
+  string endpoint_url = 2;
+
+  // Application address associated with the endpoint
+  string endpoint_app_address = 3;
+
+  // Service ID of the session associated with the endpoint.
+  string session_service_id = 4;
+
+  // Session ID of the session associated with the endpoint.
+  string session_id = 5;
+
+  // session start height
+  int64 session_start_height = 6;
+
+  // session end height
+  int64 session_end_height = 7;
+
+  // Timestamp marking the sending of the request to the endpoint.
+  google.protobuf.Timestamp endpoint_query_timestamp = 8;
+
+  // Timestamp marking the reception of the endpoint's response.
+  // Only set if the endpoint did not timeout.
+  optional google.protobuf.Timestamp endpoint_response_timestamp = 9;
+
+  // Error type if relay to this endpoint failed
+  optional ShannonEndpointErrorType error_type = 10;
+
+  // Additional error details when available
+  optional string error_details = 11;
+
+  // Recommended sanction type based on the error
+  optional ShannonSanctionType recommended_sanction = 12;
+
+  // RelayMiner error details if the endpoint returned a RelayMinerError
+  optional ShannonRelayMinerError relay_miner_error = 13;
+
+  // HTTP status code of the endpoint response
+  optional int32 endpoint_backend_service_http_response_status_code = 14;
+
+  // HTTP Response payload size
+  optional int64 endpoint_backend_service_http_response_payload_size = 15;
+
+  // TODO_TECHDEBT(@adshmh): Separate fallback endpoints into a separate message:
+  // Most of fields above (e.g. session_id) only apply to a Shannon endpoint.
+  //
+  // TODO_CONSIDERATION(@adshmh): Consider renaming to is_gateway_owned OR is_off_protocol.
+  //
+  // Tracks whether the endpoint is a fallback endpoint.
+  bool is_fallback_endpoint = 16;
+}
+
+// ShannonObservationsList provides a container for multiple ShannonRequestObservations,
+// allowing them to be embedded in other protocol buffers.
+message ShannonObservationsList {
+  repeated ShannonRequestObservations observations = 1;
+}

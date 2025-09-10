@@ -1,0 +1,31 @@
+name: Tag and Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+    branches:
+      - "main"
+  workflow_dispatch:
+    inputs:
+      custom_tag:
+        description: "Optional custom tag to add to the image (will be prefixed with branch name)"
+        type: string
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  release-on-push:
+    runs-on: ubuntu-22.04
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: rymndhng/release-on-push-action@master
+        with:
+          bump_version_scheme: patch
+          release_body: ":rocket: Release Notes !:fireworks: "
+          use_github_release_notes: true

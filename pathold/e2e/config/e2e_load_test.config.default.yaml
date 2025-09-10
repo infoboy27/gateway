@@ -1,0 +1,167 @@
+# yaml-language-server: $schema=./e2e_load_test.config.schema.yaml
+
+# Default Load test configuration for Shannon
+#
+# Usage:
+# - Expected config location: `.e2e_load_test.config.yaml`
+# - If no custom config is found, the default template is used.
+# - Create your own config to override defaults.
+#
+# Vegeta Test modes:
+# 1. E2E Test Mode: Starts PATH in Docker (Dockertest) & runs tests against it
+# 2. Load Test Mode: Runs tests against a specified gateway URL
+
+e2e_load_test_config:
+  # E2E Test Mode
+  # PATH runs in Docker (Dockertest), tests run against this container
+  e2e_config:
+    # [Optional] Seconds to wait for hydrator checks after PATH startup
+    wait_for_hydrator: 0
+    # [Optional] Docker-related options
+    docker_config:
+      # [Optional] Log Docker container output
+      #   - In CI, will log to stdout
+      #   - In local, will log to a file
+      docker_log: false
+      # [Optional] Force Docker image rebuild (useful after code changes)
+      force_rebuild_image: false
+
+  # Load Test Mode
+  # Tests run against a specified gateway URL (local or public)
+  # Examples:
+  #   - Public: "https://rpc.grove.city/v1"
+  #   - Local:  "http://localhost:3091/v1"
+  load_test_config:
+    # [Required] Custom PATH gateway URL
+    #
+    # The default value uses the Local PATH.
+    #
+    # To test against the Grove Portal, follow the instructions in following URL:
+    # path.grove.city/develop/path/load_tests#load-testing-the-grove-portal
+    #
+    gateway_url_override: "http://localhost:3070/v1"
+    # portal_api_key: "test_api_key"
+    # portal_application_id: "test"
+    portal_api_key: "$GROVE_PORTAL_API_KEY"
+    portal_application_id: "$GROVE_PORTAL_APP_ID"
+
+# Default configuration applied to all test cases (unless overridden)
+default_service_config:
+  global_rps: 100 # Requests per second (shared across all methods)
+  requests_per_method: 30 # Number of requests per method
+  success_rate: 0.95 # Minimum required success rate (80%)
+  max_p50_latency_ms: 10000ms # Max allowed P50 latency (ms)
+  max_p95_latency_ms: 20000ms # Max allowed P95 latency (ms)
+  max_p99_latency_ms: 30000ms # Max allowed P99 latency (ms)
+
+# Override default configuration for specific services
+service_config_overrides:
+  "anvil":
+    global_rps: 1
+    requests_per_method: 3
+  "arb-one":
+    archival: true
+  "arb-sepolia-testnet":
+    archival: true
+  "avax":
+    archival: true
+  "avax-dfk":
+    archival: true
+  "base":
+    archival: true
+  "base-sepolia-testnet":
+    archival: true
+  "bera":
+    archival: true
+  "bitcoin":
+    archival: true
+  "blast":
+    archival: true
+  "boba":
+    archival: true
+  "bsc":
+    archival: true
+  "celo":
+    archival: true
+  "eth":
+    archival: true
+  "eth-holesky-testnet":
+    archival: true
+  "eth-sepolia-testnet":
+    archival: true
+  "evmos":
+    archival: true
+  "fantom":
+    archival: true
+  "fraxtal":
+    archival: true
+  "fuse":
+    archival: true
+  "gnosis":
+    archival: true
+  "harmony":
+    archival: true
+  "ink":
+    archival: true
+  "iotex":
+    archival: true
+  "kaia":
+    archival: true
+  "kava":
+    archival: true
+  "linea":
+    archival: true
+  "mantle":
+    archival: true
+  "metis":
+    archival: true
+  "moonbeam":
+    archival: true
+  "moonriver":
+    archival: true
+  "near":
+    archival: true
+  "oasys":
+    archival: true
+  "op":
+    archival: true
+  "op-sepolia-testnet":
+    archival: true
+  "opbnb":
+    archival: true
+  "osmosis":
+    archival: true
+  "pocket":
+    archival: true
+  "poly":
+    archival: true
+  "poly-amoy-testnet":
+    archival: true
+  "poly-zkevm":
+    archival: true
+  "radix":
+    archival: true
+  "scroll":
+    archival: true
+  "sei":
+    archival: true
+  "solana":
+    archival: true
+  "sonic":
+    archival: true
+  "sui":
+    archival: true
+  "taiko":
+    archival: true
+  "taiko-hekla-testnet":
+    archival: true
+  "tron":
+    archival: true
+  "xrplevm":
+    archival: true
+  "xrplevm-testnet":
+    archival: true
+  "zklink-nova":
+    archival: true
+  "zksync_era":
+    archival: true

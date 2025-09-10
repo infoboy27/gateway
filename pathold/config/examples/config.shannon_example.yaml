@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=../config.schema.yaml
+#
+# The above schema URL may be used to validate this file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+#
+# Use the following if you need it to point to the local schema file:
+# yaml-language-server: $schema=../../../config/config.schema.yaml
+
+#################################################
+### Example Shannon Configuration YAML Format ###
+#################################################
+
+# DEV_NOTE: The `gateway_private_key_hex` and `owned_apps_private_keys_hex`
+# fields in this file are just random hex codes to bypass schema validation.
+
+shannon_config:
+  full_node_config:
+    # If this config is used for Shannon E2E tests, do not change rpc_url
+    # Otherwise, replace with the correct full node RPC url.
+    rpc_url: https://shannon-grove-rpc.mainnet.poktroll.com
+    grpc_config:
+      # If this config is used for Shannon E2E tests, do not change host_port
+      # Otherwise, replace with the correct full node GRPC host:port.
+      host_port: shannon-grove-grpc.mainnet.poktroll.com:443
+    # Setting this to true disables all caching of full node data.
+    lazy_mode: false
+    # Session rollover blocks is a temporary fix to handle session rollover issues.
+    # Should be removed when the rollover issue is solved at the protocol level.
+    session_rollover_blocks: 10
+    # If lazy_mode is true, the cache_config may not be set.
+    cache_config:
+      # The TTL for the session cache.
+      #  TODO_NEXT(@commoddity): Session refresh handling should be significantly reworked as part of the next changes following PATH PR #297.
+      # The proposed change is to align session refreshes with actual session expiry time,
+      # using the session expiry block and the Shannon SDK's block client.
+      # When this is done, session cache TTL can be removed altogether.
+      session_ttl: 30s
+
+  gateway_config:
+    # If this config is used for Shannon E2E tests, do not change gateway_mode
+    # Otherwise, replace with the correct gateway mode: centralized|delegated|permissionless
+    gateway_mode: "centralized"
+
+    # README: gateway_address MUST BE replaced with the correct gateway address.
+    gateway_address: pokt1up7zlytnmvlsuxzpzvlrta95347w322adsxslw
+
+    # README: gateway_private_key_hex MUST BE replaced with the correct gateway private key secret
+    # See the following link for instructions on creating a Shannon gateway.
+    # https://dev.poktroll.com/operate/quickstart/docker_compose_walkthrough#d-creating-a-gateway-deploying-an-gateway-server
+    gateway_private_key_hex: 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
+
+    owned_apps_private_keys_hex:
+      # README: the application private key MUST BE replaced with the correct application private key secret
+      - 40af4e7e1b311c76a573610fe115cd2adf1eeade709cd77ca31ad4472509d388
+    
+    # service_fallback is an array of service fallback configurations.
+    # One service may have multiple fallback endpoint URLs for each RPC type.
+    service_fallback:
+      - service_id: xrplevm
+        send_all_traffic: false
+        fallback_endpoints:
+        # In the case of services that supports multiple RPC types,
+        # all RPC type URLs must be specified, including the default URL.
+        # However, only RPC-type specific URLs are used for requests.
+        - default_url: "http://12.34.56.78"
+          json_rpc: "http://12.34.56.78:8545"
+          rest: "http://12.34.56.78:1317"
+          comet_bft: "http://12.34.56.78:26657"
+          websocket: "http://12.34.56.78:8546"
+      - service_id: eth
+        send_all_traffic: false
+        fallback_endpoints:
+        # In the case of services that support only one RPC type,
+        # only `default_url` is specified and the other RPC type URLs are omitted.
+        - default_url: "https://eth.rpc.backup.io"
+
+# Optional logger configuration
+logger_config:
+  # Valid values are: debug, info, warn, error
+  # Defaults to info if not specified
+  level: "info"

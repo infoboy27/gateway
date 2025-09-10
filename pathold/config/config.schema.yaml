@@ -1,0 +1,222 @@
+# This schema file may be used to validate the config file using the `yaml-language-server` VSCode extension.
+# See: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
+
+# To validate the config file, the following comment must be placed at the top of the .config.yaml file:
+# <REMOVE THIS TAG> yaml-language-server: $schema=https://raw.githubusercontent.com/buildwithgrove/path/refs/heads/main/config/config.schema.yaml
+#
+# Use the following if you need it to point to the local schema file:
+# <REMOVE THIS TAG> yaml-language-server: $schema=../../../config/config.schema.yaml
+
+description: "PATH Gateway Configuration YAML: this file is used to configure a PATH gateway for Shannon."
+type: object
+additionalProperties: false
+required:
+  - shannon_config
+
+properties:
+  # Shannon Configuration
+  shannon_config:
+    description: "Configuration for the Shannon gateway; if specified, the PATH instance will use the Shannon version of the Pocket protocol."
+    type: object
+    additionalProperties: false
+    required:
+      - full_node_config
+      - gateway_config
+    properties:
+      full_node_config:
+        description: "Configuration for the Shannon full node. This configuration is used to connect to the Shannon full node to get data from the Pocket blockchain."
+        type: object
+        additionalProperties: false
+        required:
+          - rpc_url
+          - grpc_config
+        properties:
+          rpc_url:
+            description: "HTTP URL for the Shannon full node."
+            type: string
+            pattern: "^(tcp|http|https)://.*$"
+          grpc_config:
+            description: "gRPC configuration for the Shannon full node."
+            type: object
+            additionalProperties: false
+            required:
+              - host_port
+            properties:
+              host_port:
+                description: "Host and port for gRPC connections, eg. 127.0.0.1:4040"
+                type: string
+                pattern: "^[^:]+:[0-9]+$"
+              insecure:
+                description: "Indicates if the gRPC connection is insecure. Must be specified if the full node is notusing TLS."
+                type: boolean
+                default: false
+              base_delay:
+                description: "Base delay for gRPC retries."
+                type: string
+              max_delay:
+                description: "Maximum delay for gRPC retries."
+                type: string
+              min_connect_timeout:
+                description: "Minimum connection timeout for gRPC."
+                type: string
+              keep_alive_time:
+                description: "Keep-alive time for gRPC connections."
+                type: string
+              keep_alive_timeout:
+                description: "Keep-alive timeout for gRPC connections."
+                type: string
+          lazy_mode:
+            description: "Indicates if lazy mode is enabled for full node connections."
+            type: boolean
+            default: true
+          session_rollover_blocks:
+            description: "Grace period after session end where rollover issues may occur (in blocks)."
+            type: integer
+            minimum: 1
+          cache_config:
+            description: "Configuration for the cache."
+            type: object
+            additionalProperties: false
+            properties:
+              app_ttl:
+                description: "TTL for the app cache."
+                type: string
+                pattern: "^[0-9]+[smh]$"
+              session_ttl:
+                description: "TTL for the session cache."
+                type: string
+                pattern: "^[0-9]+[smh]$"
+
+      gateway_config:
+        description: "Configuration for the Shannon gateway, including all required addresses and private keys for all Shannon actors."
+        type: object
+        additionalProperties: false
+        required:
+          - gateway_mode
+          - gateway_address
+          - gateway_private_key_hex
+        properties:
+          gateway_mode:
+            description: "Mode of the gateway operation."
+            type: string
+            enum: ["centralized", "delegated", "permissionless"]
+          gateway_address:
+            description: "Address of the Shannon gateway."
+            type: string
+            pattern: "^pokt1[0-9a-zA-Z]{38}$"
+          gateway_private_key_hex:
+            description: "Private key of the Shannon gateway in hexadecimal format."
+            type: string
+            pattern: "^[0-9a-fA-F]{64}$"
+          owned_apps_private_keys_hex:
+            type: array
+            description: "Private keys of Shannon Applications owned by the Gateway in hexadecimal format."
+            items:
+              type: string
+              pattern: "^[0-9a-fA-F]{64}$"
+          # TODO_CONSIDERATION(@adshmh): Consider renaming this to gateway_owned_endpoints to enable other use-cases.
+          # E.g. A gateway that uses Shannon as a fallback rather than its own URLs as a fallback.
+          # Note that this would require renaming all instances of fallback in the codebase.
+          service_fallback:
+            description: "Fallback endpoints for the Shannon gateway. An array of service fallback configurations. Each service_id must be unique within the array."
+            type: array
+            uniqueItems: true
+            items:
+              type: object
+              additionalProperties: false
+              required:
+                - service_id
+                - fallback_endpoints
+              properties:
+                service_id:
+                  description: "The service ID for this fallback configuration. Must be unique within the service_fallback array."
+                  type: string
+                fallback_endpoints:
+                  description: "Array of fallback endpoint configurations for this service. Each endpoint can define URLs for different RPC types."
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - default_url
+                    patternProperties:
+                      "^(default_url|json_rpc|rest|comet_bft|websocket)$":
+                        type: string
+                        anyOf:
+                          - pattern: "^(http|https)://.*$"
+                          - pattern: "^(http|https|ws|wss)://.*$"
+                send_all_traffic:
+                  description: "Whether to send all traffic to fallback endpoints for this service, regardless of protocol endpoint health."
+                  type: boolean
+                  default: false
+  # Logger Configuration (optional)
+  logger_config:
+    description: "Optional configuration for the logger. If not specified, info level will be used."
+    type: object
+    additionalProperties: false
+    properties:
+      level:
+        description: "Minimum log level. Valid values are: debug, info, warn, error. Defaults to info if not specified."
+        type: string
+        enum: ["debug", "info", "warn", "error"]
+        default: "info"
+
+  # Router Configuration (optional)
+  router_config:
+    description: "Optional configuration for the router, which is used to route requests to the correct service."
+    type: object
+    additionalProperties: false
+    properties:
+      port:
+        description: "Port number for the router."
+        type: integer
+      max_request_header_bytes:
+        description: "Maximum size of the request header."
+        type: integer
+      read_timeout:
+        description: "Read timeout duration for the router."
+        type: string
+      write_timeout:
+        description: "Write timeout duration for the router."
+        type: string
+      idle_timeout:
+        description: "Idle timeout duration for the router."
+        type: string
+
+  # Hydrator Configuration (optional)
+  hydrator_config:
+    description: "Configuration for the hydrator, which is used to run QoS checks against endpoints of a service."
+    type: object
+    additionalProperties: false
+    properties:
+      run_interval_ms:
+        description: "Interval (in milliseconds) at which the hydrator will run."
+        type: string
+        pattern: "^[0-9]+ms$"
+        default: "10000ms"
+      max_concurrent_endpoint_check_workers:
+        description: "Maximum number of workers that will concurrently check endpoints."
+        type: integer
+        default: 100
+      qos_disabled_service_ids:
+        description: "List of service IDs for which QoS checks will be disabled. By default all configured services will have QoS checks enabled. Primarily just used for testing & development."
+        type: array
+        items:
+          type: string
+
+  # Data Reporter Configuration (optional)
+  data_reporter_config:
+    description: "Configuration for the HTTP data reporter that accepts JSON via POST and feeds into pipelines writing to services like BigQuery (e.g., Fluentd with HTTP input and BigQuery output plugins)."
+    type: object
+    additionalProperties: false
+    required:
+      - target_url
+    properties:
+      target_url:
+        description: "The URL where the data will be reported to."
+        type: string
+        pattern: "^(http|https)://.*$"
+      post_timeout_ms:
+        description: "Timeout in milliseconds for HTTP POST operations. If zero or negative, a default timeout of 10000ms (10s) is used."
+        type: integer
+        default: 10000

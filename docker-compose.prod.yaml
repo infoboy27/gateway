@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  shannon-testnet-node:
+    image: shannon-fixed:v0.1.29
+    container_name: shannon-testnet-node
+    restart: unless-stopped
+    entrypoint: ["bash", "/start-fullnode.sh"]
+    env_file: .env
+    environment:
+      - GENESIS_URL=https://shannon-testnet-grove-rpc.beta.poktroll.com/genesis
+    ports:
+      - "26656:26656"            # P2P
+      - "26657:26657"            # RPC
+      - "9090:9090"              # gRPC
+    volumes:
+      - ./pocket-testnet:/root/.pocket
+      - ./scripts/start-fullnode.sh:/start-fullnode.sh:ro
+      - ./stake_configs:/root/stake_configs
+      - /home/pocket/pocketfs/shannon/stake_configs/pocket-config-generator:/root/pocket-config-generator
+      - ./shannon_migration:/shannon_migration
+    networks:
+      - shannon
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "curl -fsS http://127.0.0.1:26657/status >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  # Gateway service - commented out until private key issues are resolved
+  # shannon-testnet-gateway:
+  #   image: ghcr.io/buildwithgrove/path:main
+  #   container_name: shannon-testnet-gateway
+  #   depends_on:
+  #     shannon-testnet-node:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3069:3069"
+  #   volumes:
+  #     - ./gateway/config/.config.yaml:/app/config/.config.yaml:ro
+  #   command: ./path --config /app/config/.config.yaml
+  #   networks:
+  #     - shannon
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3069/health"]
+  #     interval: 60s
+  #     timeout: 15s
+  #     retries: 10
+  #     start_period: 120s
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: 10m
+  #       max-file: "3"
+
+  # Documentation website
+  path-docs:
+    image: node:18-alpine
+    container_name: path-docs
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./pathold/docusaurus:/app
+    command: sh -c "npm install && npm start -- --host 0.0.0.0"
+    networks:
+      - shannon
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  # Dashboard application
+  gateway-dashboard:
+    image: node:18-alpine
+    container_name: gateway-dashboard
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./apps/web:/app
+    command: sh -c "npm install && npm run dev -- --hostname 0.0.0.0"
+    networks:
+      - shannon
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - shannon
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  # Log aggregation with Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - shannon
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+networks:
+  shannon:
+    name: shannon
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:

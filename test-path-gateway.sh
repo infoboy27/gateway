@@ -148,3 +148,5 @@ echo "   Shannon Node RPC: http://localhost:26657"
 echo "   Shannon Node gRPC: localhost:9090"
 echo "   Path Gateway: http://localhost:3069"
 echo "   Path Gateway Health: http://localhost:3069/health"
+
+

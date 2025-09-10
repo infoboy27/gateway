@@ -2,12 +2,12 @@
 
 shannon_config:
   full_node_config:
-    # Connect to local Shannon testnet node
+    # Use local node instead of external Grove endpoints
     rpc_url: "http://shannon-testnet-node:26657"
     grpc_config:
       host_port: "shannon-testnet-node:9090"
-      insecure: true  # Local connection, no TLS needed
-      backoff_base_delay: "1s"
+      insecure: true  # Local connection, no TLS required
+      backoff_base_delay: "5s"
       backoff_max_delay: "120s"
       min_connect_timeout: "20s"
       keep_alive_time: "20s"
@@ -15,22 +15,13 @@ shannon_config:
     lazy_mode: false
 
   gateway_config:
-    # Centralized mode for testing - gateway signs and uses apps you control
+    # Use centralized mode with test keys
     gateway_mode: "centralized"
-    gateway_address: "pokt1gzpeptmukzxk3ma44q300q9fa5nzjy80wgglxc"
-    gateway_private_key_hex: "203d1163d27f239d081dfc71b113b91cd7ed57358c32791bdd7777d05638a9ed"
+    gateway_address: "pokt1czzkp4at00ep6ygk49f97w2znhjgq8l3vp7tn8"
+    gateway_private_key_hex: "0x0000000000000000000000000000000000000000000000000000000000000001"
     owned_apps_private_keys_hex:
-      - "0000000000000000000000000000000000000000000000000000000000000001"
-      # Add more app keys if you have multiple apps
+      - "0x0000000000000000000000000000000000000000000000000000000000000001"
 
-  # Optional fallback for services (if protocol runs out of valid endpoints)
-  # service_fallback:
-  #   - service_id: eth
-  #     send_all_traffic: false
-  #     fallback_urls:
-  #       - "https://eth.rpc.grove.city/v1/your-token"
-  #       - "https://other.endpoint/..."
-  
 router_config:
   # HTTP port where PATH listens
   port: 3069
@@ -41,5 +32,5 @@ router_config:
     allowed_headers: ["*"]
 
 logger_config:
-  level: "info"
+  level: "debug"
   format: "json"

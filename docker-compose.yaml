@@ -1,6 +1,6 @@
 services:
   shannon-testnet-node:
-    image: weaversnodes/shannon:v0.1.28
+    image: shannon-fixed:v0.1.29
     container_name: shannon-testnet-node
     restart: unless-stopped
     entrypoint: ["bash", "/start-fullnode.sh"]
@@ -43,15 +43,15 @@ services:
       - "3069:3069"
     volumes:
       - ./gateway/config/.config.yaml:/app/config/.config.yaml:ro
-    command: ./path
+    command: ./path --config /app/config/.config.yaml
     networks:
       - shannon
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3069/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
+      interval: 60s        # Increased interval
+      timeout: 15s         # Increased timeout
+      retries: 10          # Increased retries
+      start_period: 120s   # Increased start period to allow full initialization
     logging:
       driver: json-file
       options:
